@@ -6,6 +6,8 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors());
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
 
 // 전국 12대 관측소 메타
 const stationMap = [

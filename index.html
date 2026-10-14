@@ -46,7 +46,6 @@
     }
     .filter-btn.active { background: #0284c7; color: white; }
 
-    /* 데스크톱 기본 우측 패널 */
     .info-pane {
       flex: 0.9; max-width: 500px; height: 100%; background: #ffffff;
       overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px;
@@ -99,18 +98,27 @@
     .law-alert { background: #f8fafc; border-left: 4px solid #f59e0b; padding: 10px 12px; font-size: 11px; color: #475569; line-height: 1.4; }
 
     .live-badge {
-      display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+      display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 3px 7px; border-radius: 4px; white-space: nowrap;
     }
 
     .data-source-footer {
-      margin-top: 6px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0;
-      border-radius: 10px; font-size: 10px; color: #64748b; line-height: 1.4;
+      margin-top: 6px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; font-size: 11px; color: #64748b; line-height: 1.5;
     }
     .data-source-footer strong { color: #334155; }
-    .data-source-footer .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-    .source-tag { background: #e2e8f0; color: #475569; padding: 2px 5px; border-radius: 4px; font-size: 9px; }
+    .data-source-footer .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; margin-bottom: 8px; }
+    .source-tag { background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
 
-    /* 📱 모바일 전용 반응형 (바텀 시트 전환) */
+    /* 공식 문의 및 제보 섹션 */
+    .contact-box {
+      margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;
+      display: flex; flex-direction: column; gap: 3px; font-size: 11px;
+    }
+    .contact-link {
+      color: #0284c7; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .contact-link:hover { text-decoration: underline; }
+
     @media (max-width: 768px) {
       .header-desc { display: none; }
       .map-guide-banner { top: 56px; font-size: 11px; padding: 5px 12px; }
@@ -120,21 +128,17 @@
         position: absolute; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
         height: 72vh; max-height: 72vh; border-radius: 20px 20px 0 0;
         box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25); border-left: none;
-        transform: translateY(calc(100% - 65px)); /* 기본 접힘 상태 (상단 탭만 노출) */
+        transform: translateY(calc(100% - 65px));
         padding: 12px 16px 30px 16px;
       }
 
-      .info-pane.open {
-        transform: translateY(0); /* 클릭 시 위로 펼쳐짐 */
-      }
+      .info-pane.open { transform: translateY(0); }
 
       .bottom-sheet-handle {
         display: flex; justify-content: center; align-items: center; width: 100%;
         padding-bottom: 8px; cursor: pointer;
       }
-      .handle-bar {
-        width: 36px; height: 4px; background: #cbd5e1; border-radius: 2px;
-      }
+      .handle-bar { width: 36px; height: 4px; background: #cbd5e1; border-radius: 2px; }
 
       .empty-state { display: none !important; }
       #resultContent { display: flex !important; }
@@ -162,9 +166,7 @@
       <button class="gps-btn" onclick="findMyLocation()">🎯 내 GPS 위치</button>
     </div>
 
-    <!-- 우측 패널 (모바일에서는 바텀 시트) -->
     <div class="info-pane" id="infoPane">
-      <!-- 모바일 손잡이 드래그 바 -->
       <div class="bottom-sheet-handle" onclick="toggleBottomSheet()">
         <div class="handle-bar"></div>
       </div>
@@ -237,6 +239,7 @@
           <span id="lawText">-</span>
         </div>
 
+        <!-- 하단 데이터 출처 및 공식 문의처 -->
         <div class="data-source-footer">
           <strong>📋 데이터 출처 및 법적 고지</strong>
           <div class="source-tags">
@@ -244,9 +247,16 @@
             <span class="source-tag">기상청</span>
             <span class="source-tag">국립수산과학원</span>
           </div>
-          <p style="margin-top: 5px; font-size: 10px; color: #94a3b8;">
+          <p style="font-size: 10px; color: #94a3b8; line-height: 1.4;">
             * 공식 조석 계산식 기반 참고용 정보이며, 안전장구 착용 및 현장 통제가 우선입니다.
           </p>
+
+          <div class="contact-box">
+            <span>📮 <strong>어촌계 수정 요청 / 포인트 제보 / 비즈니스 문의</strong></span>
+            <a href="mailto:badapin.official@gmail.com?subject=[바다핀 문의] 포인트 제보 및 문의사항" class="contact-link">
+              ✉️ badapin.official@gmail.com
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -455,7 +465,6 @@
       };
     }
 
-    // 모바일 바텀시트 열림/닫힘 토글
     function toggleBottomSheet() {
       if (window.innerWidth <= 768) {
         const pane = document.getElementById('infoPane');
@@ -575,7 +584,6 @@
 
       map.panTo(new naver.maps.LatLng(lat, lng));
       fetchAndAnalyze(lat, lng, customTitle);
-      // 모바일에서는 분석과 동시에 바텀시트가 위로 슬라이드 업
       openBottomSheet();
     }
 

@@ -29,18 +29,27 @@
     }
 
     .gps-btn {
-      position: absolute; bottom: 24px; left: 16px; z-index: 10;
-      background: #0284c7; color: white; border: none; padding: 9px 15px; border-radius: 30px;
-      font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 5px;
+      position: absolute; bottom: 24px; left: 16px; z-index: 15;
+      background: #0284c7; color: white; border: none; padding: 10px 16px; border-radius: 30px;
+      font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px;
       box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); cursor: pointer; transition: all 0.2s;
     }
     .gps-btn:hover { background: #0369a1; }
+
+    /* 모바일 바텀시트 열렸을 때 지도 덮는 터치 백드롭 오버레이 */
+    .sheet-backdrop {
+      display: none;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.4); z-index: 25;
+      backdrop-filter: blur(1px);
+      transition: opacity 0.25s ease;
+    }
 
     /* 데스크톱 기본 우측 패널 */
     .info-pane {
       flex: 0.9; max-width: 500px; height: 100%; background: #ffffff;
       overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px;
-      box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 20; border-left: 1px solid #e2e8f0;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 30; border-left: 1px solid #e2e8f0;
       transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -105,7 +114,6 @@
       display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 3px 7px; border-radius: 4px; white-space: nowrap;
     }
 
-    /* 법적 면책 및 이용약관 카드 */
     .terms-box {
       margin-top: 6px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0;
       border-radius: 10px; font-size: 11px; color: #64748b; line-height: 1.5;
@@ -126,7 +134,7 @@
     }
     .contact-link:hover { text-decoration: underline; }
 
-    /* 모바일 바텀시트 반응형 */
+    /* 📱 모바일 바텀시트 반응형 */
     @media (max-width: 768px) {
       .header-desc { display: none; }
       .map-guide-banner { top: 16px; font-size: 11px; padding: 6px 14px; }
@@ -165,6 +173,9 @@
       <div class="map-guide-banner">📍 원하는 연안/바다를 터치해 분석하세요</div>
       <div id="map"></div>
 
+      <!-- 모바일 바텀시트 열렸을 때 지도 영역 터치로 닫기 위한 오버레이 -->
+      <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeBottomSheet()"></div>
+
       <button class="gps-btn" onclick="findMyLocation()">🎯 내 GPS 위치</button>
     </div>
 
@@ -188,7 +199,6 @@
           <div class="point-coords" id="pCoords">지도를 터치하면 정보가 표시됩니다</div>
         </div>
 
-        <!-- 📅 날짜 선택 바 -->
         <div class="date-picker-box">
           <div class="date-quick-btns">
             <button class="date-btn active" id="btnToday" onclick="selectQuickDate(0)">오늘</button>
@@ -251,7 +261,6 @@
           <span id="lawText">-</span>
         </div>
 
-        <!-- 법적 면책 고지 및 이용약관 카드 -->
         <div class="terms-box">
           <strong>⚖️ 서비스 이용약관 및 법적 면책 고지</strong>
           <ul>
@@ -340,7 +349,6 @@
     let clickMarker = null;
     let gpsMarker = null;
 
-    // 현재 선택된 위치 및 날짜 상태값
     let currentSelectedCoords = null;
     let currentSelectedTitle = null;
     let selectedDateObj = new Date();
@@ -391,14 +399,12 @@
       return nearest;
     }
 
-    // 날짜별 정밀 조석 계산 엔진
     function calculateInstantTide(lat, lng, targetDate) {
       const pLat = parseFloat(lat);
       const pLng = parseFloat(lng);
       const station = getNearestStation(pLat, pLng);
 
       const date = targetDate || new Date();
-      // 2026-10-14 기준 (음력 9월 4일 -> 11물 기준점)
       const refDate = new Date("2026-10-14T00:00:00Z").getTime();
       const targetTime = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
       const diffDays = Math.round((targetTime - refDate) / (1000 * 60 * 60 * 24));
@@ -458,7 +464,6 @@
         fDesc = "조류가 멈춰 어류 활성도 저하";
       }
 
-      // 날짜별 물때 시각 50분씩 순연 반영
       const shiftMin = (diffDays * 50) % 720;
       let lowHour = 22, lowMin = 15 + shiftMin;
       while (lowMin >= 60) { lowMin -= 60; lowHour = (lowHour + 1) % 24; }
@@ -474,7 +479,6 @@
       };
     }
 
-    // 날짜 퀵 선택 (오늘/내일/모레)
     function selectQuickDate(offsetDays) {
       document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
       if (offsetDays === 0) document.getElementById('btnToday').classList.add('active');
@@ -510,21 +514,39 @@
       }
     }
 
+    // 📱 모바일 바텀시트 열기/닫기/토글 제어
     function toggleBottomSheet() {
       if (window.innerWidth <= 768) {
         const pane = document.getElementById('infoPane');
-        pane.classList.toggle('open');
+        const backdrop = document.getElementById('sheetBackdrop');
+        if (pane.classList.contains('open')) {
+          closeBottomSheet();
+        } else {
+          openBottomSheet();
+        }
       }
     }
 
     function openBottomSheet() {
       if (window.innerWidth <= 768) {
         document.getElementById('infoPane').classList.add('open');
+        const backdrop = document.getElementById('sheetBackdrop');
+        backdrop.style.display = 'block';
+        setTimeout(() => { backdrop.style.opacity = '1'; }, 10);
+      }
+    }
+
+    // 바깥 지도(백드롭) 터치 시 시트 내리기
+    function closeBottomSheet() {
+      if (window.innerWidth <= 768) {
+        document.getElementById('infoPane').classList.remove('open');
+        const backdrop = document.getElementById('sheetBackdrop');
+        backdrop.style.opacity = '0';
+        setTimeout(() => { backdrop.style.display = 'none'; }, 250);
       }
     }
 
     window.onload = function() {
-      // 날짜 피커 초기값 세팅 (오늘 날짜)
       syncDateInputUI(new Date());
 
       map = new naver.maps.Map('map', {
@@ -564,7 +586,6 @@
         });
       }
 
-      // 현재 선택 좌표 상태 저장
       currentSelectedCoords = { lat, lng };
       currentSelectedTitle = customTitle;
 
@@ -573,18 +594,30 @@
       openBottomSheet();
     }
 
+    // 🎯 브라우저 정식 권한 팝업을 강제 유도하는 정밀 GPS 함수
     function findMyLocation() {
       if (!navigator.geolocation) {
-        alert("브라우저가 GPS 기능을 지원하지 않습니다.");
+        alert("이 기기나 브라우저는 GPS 위치 기능을 지원하지 않습니다.");
         return;
       }
 
       const gpsBtn = document.querySelector('.gps-btn');
+      const originalText = gpsBtn.innerText;
       gpsBtn.innerText = "📡 위치 찾는 중...";
+      gpsBtn.disabled = true;
+
+      // 브라우저 팝업을 반드시 유발하도록 캐시 무효화 (maximumAge: 0)
+      const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0
+      };
 
       navigator.geolocation.getCurrentPosition(
         function(position) {
-          gpsBtn.innerText = "🎯 내 GPS 위치";
+          gpsBtn.innerText = originalText;
+          gpsBtn.disabled = false;
+
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
@@ -605,10 +638,43 @@
           placeCustomPin(lat, lng, `내 위치 (${placeName})`, false);
         },
         function(error) {
-          gpsBtn.innerText = "🎯 내 GPS 위치";
-          alert("GPS 위치 권한을 허용해 주셔야 현재 위치를 찾을 수 있습니다.");
+          gpsBtn.innerText = originalText;
+          gpsBtn.disabled = false;
+
+          // 사용자가 브라우저 팝업에서 [허용 안 함]을 누른 경우 친절 복구 안내
+          if (error.code === error.PERMISSION_DENIED) {
+            alert("📍 위치 정보 권한이 차단되어 있습니다.\n\n[권한 재허용 방법]\n1. 주소창 좌측의 🔒(자물쇠) 또는 설정 아이콘을 터치하세요.\n2. '권한' > '위치' 항목을 [허용]으로 변경한 뒤 새로고침해 주세요!");
+          } else if (error.code === error.TIMEOUT) {
+            // 고정밀 타임아웃 시 Wi-Fi 네트워크 기반 완화 옵션으로 즉각 2차 재시도
+            navigator.geolocation.getCurrentPosition(
+              function(fallbackPos) {
+                const lat = fallbackPos.coords.latitude;
+                const lng = fallbackPos.coords.longitude;
+                if (!isValidSeaArea(lat, lng)) return;
+
+                if (gpsMarker) gpsMarker.setMap(null);
+                gpsMarker = new naver.maps.Marker({
+                  position: new naver.maps.LatLng(lat, lng),
+                  map: map,
+                  icon: {
+                    content: '<div style="background:#0284c7; color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:11px; box-shadow:0 0 0 8px rgba(2, 132, 199, 0.35); border:2px solid white;">내위치</div>',
+                    anchor: new naver.maps.Point(12, 12)
+                  }
+                });
+                map.setZoom(12);
+                const placeName = findNearestLandmarkName(lat, lng);
+                placeCustomPin(lat, lng, `내 위치 (${placeName})`, false);
+              },
+              function() {
+                alert("실내 환경으로 위치 신호가 약합니다. 실외에서 시도하거나 지도를 직접 터치해 주세요.");
+              },
+              { enableHighAccuracy: false, timeout: 6000 }
+            );
+          } else {
+            alert("현재 위치를 확인할 수 없습니다. 지도를 직접 터치하여 포인트를 선택해 주세요.");
+          }
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        geoOptions
       );
     }
 
@@ -620,7 +686,6 @@
       document.getElementById('pTitle').innerText = customTitle || `선택 지점`;
       document.getElementById('pCoords').innerText = `위도 ${lat.toFixed(4)} | 경도 ${lng.toFixed(4)}`;
 
-      // 선택된 날짜 레이블 표기
       const d = targetDate || new Date();
       const dateStr = `${d.getMonth() + 1}월 ${d.getDate()}일`;
       document.getElementById('tideCycleDateLabel').innerText = `${dateStr} 물때`;

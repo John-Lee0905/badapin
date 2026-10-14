@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>바다핀 (BadaPin) - 대한민국 바다 포인트 분석기</title>
+  <title>바다핀 (BadaPin) - 대한민국 연안 조석 & 출조 분석기</title>
   <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=dnbd0ct3ef&submodules=geocoder"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -23,7 +23,7 @@
     .map-guide-banner {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 10;
       background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); color: #38bdf8;
-      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      padding: 7px 15px; border-radius: 20px; font-size: 12px; font-weight: 700;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3); pointer-events: none; border: 1px solid rgba(56, 189, 248, 0.3);
       white-space: nowrap;
     }
@@ -36,16 +36,7 @@
     }
     .gps-btn:hover { background: #0369a1; }
 
-    .filter-bar {
-      position: absolute; top: 12px; left: 16px; z-index: 10;
-      display: flex; gap: 4px; background: rgba(255, 255, 255, 0.95); padding: 3px; border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .filter-btn {
-      border: none; background: transparent; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;
-    }
-    .filter-btn.active { background: #0284c7; color: white; }
-
+    /* 데스크톱 기본 우측 패널 */
     .info-pane {
       flex: 0.9; max-width: 500px; height: 100%; background: #ffffff;
       overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px;
@@ -101,15 +92,18 @@
       display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 3px 7px; border-radius: 4px; white-space: nowrap;
     }
 
-    .data-source-footer {
+    /* 법적 면책 및 이용약관 카드 */
+    .terms-box {
       margin-top: 6px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0;
       border-radius: 10px; font-size: 11px; color: #64748b; line-height: 1.5;
     }
-    .data-source-footer strong { color: #334155; }
-    .data-source-footer .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; margin-bottom: 8px; }
+    .terms-box strong { color: #334155; }
+    .terms-box ul { margin: 6px 0 8px 16px; padding: 0; }
+    .terms-box li { margin-bottom: 3px; }
+
+    .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
     .source-tag { background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
 
-    /* 공식 문의 및 제보 섹션 */
     .contact-box {
       margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;
       display: flex; flex-direction: column; gap: 3px; font-size: 11px;
@@ -119,9 +113,10 @@
     }
     .contact-link:hover { text-decoration: underline; }
 
+    /* 모바일 바텀시트 반응형 */
     @media (max-width: 768px) {
       .header-desc { display: none; }
-      .map-guide-banner { top: 56px; font-size: 11px; padding: 5px 12px; }
+      .map-guide-banner { top: 16px; font-size: 11px; padding: 6px 14px; }
       .gps-btn { bottom: 85px; }
 
       .info-pane {
@@ -149,18 +144,12 @@
 
   <header>
     <h1>🌊 바다<span class="brand-pin">핀</span> (BadaPin)</h1>
-    <div class="header-desc">실시간 물때 & 포인트 정밀 분석기</div>
+    <div class="header-desc">실시간 연안 조석 & 출조 분석기</div>
   </header>
 
   <div class="app-container">
     <div class="map-pane">
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="filterFamousSpots('ALL')">전체 명당</button>
-        <button class="filter-btn" onclick="filterFamousSpots('FISHING')">🎣 낚시</button>
-        <button class="filter-btn" onclick="filterFamousSpots('HARVESTING')">🔦 해루질</button>
-      </div>
-
-      <div class="map-guide-banner">📍 지도를 터치하여 포인트를 선택하세요</div>
+      <div class="map-guide-banner">📍 원하는 연안/바다를 터치해 분석하세요</div>
       <div id="map"></div>
 
       <button class="gps-btn" onclick="findMyLocation()">🎯 내 GPS 위치</button>
@@ -173,14 +162,14 @@
 
       <div class="empty-state" id="emptyState">
         <div class="icon">🧭</div>
-        <h3>가고 싶은 바다를 선택하세요</h3>
-        <p>명당 마커를 누르거나 바다 위를 클릭하면<br><strong>선택 지역의 실제 지명과 조석 정보</strong>를 즉시 분석합니다.<br><small style="color:#94a3b8;">*내륙 및 휴전선 이북 지역은 분석이 제한됩니다.</small></p>
+        <h3>가고 싶은 바다를 클릭하세요</h3>
+        <p>방파제나 갯벌 등 원하는 연안을 터치하면<br><strong>실시간 조석 주기와 안전 출조 가이드</strong>를 즉시 분석합니다.<br><small style="color:#94a3b8;">*내륙 및 휴전선 이북 해역은 분석이 제한됩니다.</small></p>
       </div>
 
       <div id="resultContent" style="display: none; flex-direction: column; gap: 13px;">
         <div class="point-header" onclick="toggleBottomSheet()">
           <div class="point-title-wrap">
-            <span class="point-title" id="pTitle">포인트를 선택하세요</span>
+            <span class="point-title" id="pTitle">지점을 선택하세요</span>
             <span class="live-badge" id="liveBadge">LIVE 분석</span>
           </div>
           <div class="point-coords" id="pCoords">지도를 터치하면 정보가 표시됩니다</div>
@@ -239,21 +228,24 @@
           <span id="lawText">-</span>
         </div>
 
-        <!-- 하단 데이터 출처 및 공식 문의처 -->
-        <div class="data-source-footer">
-          <strong>📋 데이터 출처 및 법적 고지</strong>
+        <!-- 법적 면책 고지 및 이용약관 카드 -->
+        <div class="terms-box">
+          <strong>⚖️ 서비스 이용약관 및 법적 면책 고지</strong>
+          <ul>
+            <li><strong>순수 정보 제공 목적:</strong> 본 서비스는 공공 해양 조석 알고리즘에 기반하여 간조/만조 수위와 기상 예측을 제공하는 <strong>순수 연안 정보 도구</strong>이며, 특정 어장의 채취를 권유하거나 특정 지점을 명당으로 유도하지 않습니다.</li>
+            <li><strong>마을어업권 및 양식장 준수:</strong> 수산업법 및 수산자원관리법에 따라 어촌계가 면허를 취득한 마을어장/양식장 내에서의 패류(바지락, 소라, 전복 등) 무단 채취는 엄격히 금지됩니다. 이용자는 반드시 현장 경계 깃발과 통제 표식을 확인해야 합니다.</li>
+            <li><strong>안전사고 면책:</strong> 해양 기상 급변, 갯벌 조류 유입 속도, 너울성 파도로 인한 사고의 민·형사상 책임은 이용자 본인에게 있으므로, 구명조끼 등 필수 안전장구를 상시 착용해야 합니다.</li>
+          </ul>
+
           <div class="source-tags">
-            <span class="source-tag">국립해양조사원</span>
-            <span class="source-tag">기상청</span>
+            <span class="source-tag">국립해양조사원 표준 조석주기</span>
+            <span class="source-tag">기상청 해양기상</span>
             <span class="source-tag">국립수산과학원</span>
           </div>
-          <p style="font-size: 10px; color: #94a3b8; line-height: 1.4;">
-            * 공식 조석 계산식 기반 참고용 정보이며, 안전장구 착용 및 현장 통제가 우선입니다.
-          </p>
 
           <div class="contact-box">
-            <span>📮 <strong>어촌계 수정 요청 / 포인트 제보 / 비즈니스 문의</strong></span>
-            <a href="mailto:badapin.official@gmail.com?subject=[바다핀 문의] 포인트 제보 및 문의사항" class="contact-link">
+            <span>📮 <strong>어촌계 수정 요청 / 제보 / 비즈니스 문의</strong></span>
+            <a href="mailto:badapin.official@gmail.com?subject=[바다핀 문의] 문의 및 정보 수정 요청" class="contact-link">
               ✉️ badapin.official@gmail.com
             </a>
           </div>
@@ -263,24 +255,6 @@
   </div>
 
   <script>
-    const famousSpots = [
-      { id: 1, name: "인천 영흥도 선재도 갯벌", category: "HARVESTING", lat: 37.2345, lng: 126.5381 },
-      { id: 2, name: "인천 시화방조제 오이도권", category: "FISHING", lat: 37.3172, lng: 126.6542 },
-      { id: 3, name: "태안 마검포항 방파제", category: "BOTH", lat: 36.6348, lng: 126.2974 },
-      { id: 4, name: "보령 무창포 갯벌 & 석대도", category: "HARVESTING", lat: 36.2415, lng: 126.5160 },
-      { id: 5, name: "군산 비응항 방파제", category: "FISHING", lat: 35.9392, lng: 126.5298 },
-      { id: 6, name: "부안 격포항 채석강 방파제", category: "FISHING", lat: 35.6268, lng: 126.4695 },
-      { id: 7, name: "여수 돌산 신복 방파제", category: "BOTH", lat: 34.6215, lng: 127.7654 },
-      { id: 8, name: "통영 미륵도 삼덕항", category: "FISHING", lat: 34.7928, lng: 128.3842 },
-      { id: 9, name: "거제 지세포 방파제 잔교", category: "FISHING", lat: 34.8562, lng: 128.7185 },
-      { id: 10, name: "남해 창선도 단항 방파제", category: "HARVESTING", lat: 34.9312, lng: 128.0315 },
-      { id: 11, name: "부산 기장 대변항 방파제", category: "FISHING", lat: 35.2215, lng: 129.2291 },
-      { id: 12, name: "포항 영일만항 북방파제", category: "FISHING", lat: 36.1082, lng: 129.4312 },
-      { id: 13, name: "강릉 주문진항 소돌 방파제", category: "FISHING", lat: 37.8924, lng: 128.8324 },
-      { id: 14, name: "서귀포 위미항 방파제", category: "FISHING", lat: 33.2678, lng: 126.6612 },
-      { id: 15, name: "제주 조천 함덕 갯바위", category: "BOTH", lat: 33.5435, lng: 126.6698 }
-    ];
-
     const stationMap = [
       { code: "DT_0001", name: "인천", lat: 37.452, lng: 126.592, region: "WEST", baseDiff: 850 },
       { code: "DT_0002", name: "대산/태안", lat: 36.996, lng: 126.353, region: "WEST", baseDiff: 780 },
@@ -297,12 +271,12 @@
     ];
 
     const coastalLandmarks = [
-      { name: "인천 영흥도/대부도 연안", lat: 37.25, lng: 126.55 },
+      { name: "인천 영흥도/선재도 연안", lat: 37.25, lng: 126.55 },
       { name: "인천 송도/오이도 해역", lat: 37.35, lng: 126.66 },
       { name: "경기 화성 궁평항/제부도 연안", lat: 37.15, lng: 126.68 },
       { name: "충남 당진 왜목마을/석문 연안", lat: 37.04, lng: 126.52 },
       { name: "충남 서산 대산/삼길포 연안", lat: 37.00, lng: 126.45 },
-      { name: "충남 태안 만리포/의항 해역", lat: 36.79, lng: 126.14 },
+      { name: "충남 태안 만리포/모항 해역", lat: 36.79, lng: 126.14 },
       { name: "충남 태안 안면도 마검포/백사장 연안", lat: 36.58, lng: 126.30 },
       { name: "충남 보령 대천/무창포 연안", lat: 36.28, lng: 126.51 },
       { name: "충남 서천 홍원항/춘장대 연안", lat: 36.16, lng: 126.50 },
@@ -316,7 +290,7 @@
       { name: "전남 고흥 녹동항/거금도 연안", lat: 34.52, lng: 127.13 },
       { name: "전남 여수 돌산/가막만 해역", lat: 34.65, lng: 127.75 },
       { name: "경남 남해 미조/상주 은모래 연안", lat: 34.72, lng: 127.98 },
-      { name: "경남 통영 미륵도/한산도 해역", lat: 34.80, lng: 128.45 },
+      { name: "경남 통영 미륵도/삼덕항 해역", lat: 34.80, lng: 128.45 },
       { name: "경남 거제 지세포/구조라 해역", lat: 34.82, lng: 128.69 },
       { name: "부산 가덕도/신항만 연안", lat: 35.02, lng: 128.82 },
       { name: "부산 다대포/영도 연안", lat: 35.06, lng: 129.05 },
@@ -342,8 +316,6 @@
     let map = null;
     let clickMarker = null;
     let gpsMarker = null;
-    let famousMarkerObjects = [];
-    let selectedSpotId = null;
 
     function isValidSeaArea(lat, lng) {
       if (lat < 32.8 || lat > 38.3 || lng < 124.5 || lng > 131.5) {
@@ -441,7 +413,7 @@
         hDesc = `야간 간조 ${lowCm}cm (소라·낙지 서식 여밭 완전 노출)`;
       } else if (lowCm <= 160 && isMudFlat) {
         hScore = "체험 보통"; hCardClass = "normal";
-        hDesc = `간조 ${lowCm}cm (소라는 불가하나 상부 바지락/맛조개 체험 가능)`;
+        hDesc = `간조 ${lowCm}cm (상부 바지락/맛조개 체험 위주 가능)`;
       }
 
       let fScore = "보통", fCardClass = "normal";
@@ -488,82 +460,16 @@
         zoomControlOptions: { position: naver.maps.Position.RIGHT_BOTTOM }
       });
 
-      renderFamousMarkers('ALL');
-
       naver.maps.Event.addListener(map, 'click', function(e) {
         const lat = e.coord.lat();
         const lng = e.coord.lng();
 
         if (!isValidSeaArea(lat, lng)) return;
 
-        selectedSpotId = null;
-        updateFamousMarkerStyles();
-
         const placeName = findNearestLandmarkName(lat, lng);
         placeCustomPin(lat, lng, placeName, true);
       });
     };
-
-    function updateFamousMarkerStyles() {
-      famousMarkerObjects.forEach(({ spot, marker }) => {
-        const isSelected = spot.id === selectedSpotId;
-        const iconSymbol = spot.category === 'HARVESTING' ? '🔦' : (spot.category === 'FISHING' ? '🎣' : '⭐');
-        const bgColor = isSelected ? '#ea580c' : '#0284c7';
-        const scaleStyle = isSelected ? 'transform: scale(1.15); box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.45);' : '';
-
-        marker.setIcon({
-          content: `
-            <div style="background:${bgColor}; color:white; border-radius:20px; padding:5px 10px; font-size:11px; font-weight:800; box-shadow:0 3px 10px rgba(0,0,0,0.3); border:2px solid white; ${scaleStyle} display:flex; align-items:center; gap:4px; white-space:nowrap; cursor:pointer; transition: all 0.15s;">
-              <span>${iconSymbol}</span>
-              <span>${spot.name.split(' ')[1] || spot.name}</span>
-            </div>
-          `,
-          anchor: new naver.maps.Point(20, 15)
-        });
-      });
-    }
-
-    function renderFamousMarkers(filter) {
-      famousMarkerObjects.forEach(item => item.marker.setMap(null));
-      famousMarkerObjects = [];
-
-      famousSpots.forEach(spot => {
-        if (filter !== 'ALL') {
-          if (filter === 'FISHING' && spot.category === 'HARVESTING') return;
-          if (filter === 'HARVESTING' && spot.category === 'FISHING') return;
-        }
-
-        const iconSymbol = spot.category === 'HARVESTING' ? '🔦' : (spot.category === 'FISHING' ? '🎣' : '⭐');
-        const marker = new naver.maps.Marker({
-          position: new naver.maps.LatLng(spot.lat, spot.lng),
-          map: map,
-          title: spot.name,
-          icon: {
-            content: `
-              <div style="background:#0284c7; color:white; border-radius:20px; padding:5px 9px; font-size:11px; font-weight:800; box-shadow:0 3px 10px rgba(0,0,0,0.3); border:2px solid white; display:flex; align-items:center; gap:4px; white-space:nowrap; cursor:pointer;">
-                <span>${iconSymbol}</span>
-                <span>${spot.name.split(' ')[1] || spot.name}</span>
-              </div>
-            `,
-            anchor: new naver.maps.Point(20, 15)
-          }
-        });
-
-        naver.maps.Event.addListener(marker, 'click', function() {
-          selectedSpotId = spot.id;
-          updateFamousMarkerStyles();
-          placeCustomPin(spot.lat, spot.lng, spot.name, false);
-        });
-
-        famousMarkerObjects.push({ spot, marker });
-      });
-    }
-
-    function filterFamousSpots(type) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
-      renderFamousMarkers(type);
-    }
 
     function placeCustomPin(lat, lng, customTitle, shouldDrawPin) {
       if (clickMarker) {
@@ -603,9 +509,6 @@
           const lng = position.coords.longitude;
 
           if (!isValidSeaArea(lat, lng)) return;
-
-          selectedSpotId = null;
-          updateFamousMarkerStyles();
 
           if (gpsMarker) gpsMarker.setMap(null);
           gpsMarker = new naver.maps.Marker({

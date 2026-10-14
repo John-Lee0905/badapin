@@ -57,6 +57,19 @@
     .point-title { font-size: 18px; font-weight: 800; color: #0f172a; word-break: keep-all; line-height: 1.3; }
     .point-coords { font-size: 11px; color: #64748b; font-family: monospace; }
 
+    /* 날짜 선택 툴바 */
+    .date-picker-box {
+      background: #f1f5f9; border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .date-quick-btns { display: flex; gap: 4px; }
+    .date-btn {
+      border: 1px solid #cbd5e1; background: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;
+    }
+    .date-btn.active { background: #0284c7; color: white; border-color: #0284c7; }
+    .date-input {
+      border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; font-size: 11px; font-weight: 700; color: #1e293b; background: white; outline: none; cursor: pointer;
+    }
+
     .score-container { display: flex; flex-direction: column; gap: 8px; }
     .score-card {
       border-radius: 12px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center;
@@ -121,7 +134,7 @@
 
       .info-pane {
         position: absolute; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
-        height: 72vh; max-height: 72vh; border-radius: 20px 20px 0 0;
+        height: 75vh; max-height: 75vh; border-radius: 20px 20px 0 0;
         box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25); border-left: none;
         transform: translateY(calc(100% - 65px));
         padding: 12px 16px 30px 16px;
@@ -175,6 +188,16 @@
           <div class="point-coords" id="pCoords">지도를 터치하면 정보가 표시됩니다</div>
         </div>
 
+        <!-- 📅 날짜 선택 바 -->
+        <div class="date-picker-box">
+          <div class="date-quick-btns">
+            <button class="date-btn active" id="btnToday" onclick="selectQuickDate(0)">오늘</button>
+            <button class="date-btn" id="btnTomorrow" onclick="selectQuickDate(1)">내일</button>
+            <button class="date-btn" id="btnDayAfter" onclick="selectQuickDate(2)">모레</button>
+          </div>
+          <input type="date" class="date-input" id="customDateInput" onchange="onCustomDateChange(this.value)">
+        </div>
+
         <div>
           <div class="card-title">🎯 초보자 출조 추천 판정</div>
           <div class="score-container">
@@ -204,7 +227,7 @@
           <div style="font-size: 11px; font-weight: 700; color: #475569;" id="observatoryName">연동 관측소: 대기 중</div>
           <div class="tide-grid">
             <div class="tide-item">
-              <div class="t-sub">오늘 물때</div>
+              <div class="t-sub" id="tideCycleDateLabel">선택일 물때</div>
               <div class="t-main" id="tideCycle">-</div>
             </div>
             <div class="tide-item">
@@ -317,6 +340,11 @@
     let clickMarker = null;
     let gpsMarker = null;
 
+    // 현재 선택된 위치 및 날짜 상태값
+    let currentSelectedCoords = null;
+    let currentSelectedTitle = null;
+    let selectedDateObj = new Date();
+
     function isValidSeaArea(lat, lng) {
       if (lat < 32.8 || lat > 38.3 || lng < 124.5 || lng > 131.5) {
         alert("대한민국 관할 해역 범위를 벗어났습니다.");
@@ -363,14 +391,17 @@
       return nearest;
     }
 
-    function calculateInstantTide(lat, lng) {
+    // 날짜별 정밀 조석 계산 엔진
+    function calculateInstantTide(lat, lng, targetDate) {
       const pLat = parseFloat(lat);
       const pLng = parseFloat(lng);
       const station = getNearestStation(pLat, pLng);
 
+      const date = targetDate || new Date();
+      // 2026-10-14 기준 (음력 9월 4일 -> 11물 기준점)
       const refDate = new Date("2026-10-14T00:00:00Z").getTime();
-      const curDate = new Date().getTime();
-      const diffDays = Math.round((curDate - refDate) / (1000 * 60 * 60 * 24));
+      const targetTime = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+      const diffDays = Math.round((targetTime - refDate) / (1000 * 60 * 60 * 24));
       
       let tideNum = ((11 + diffDays - 1) % 15 + 15) % 15 + 1;
       let tideName = `${tideNum}물`;
@@ -398,9 +429,9 @@
       }
 
       let lowCm = 0;
-      if (isSari) lowCm = 50 + Math.floor(Math.abs(Math.sin(pLat * 10)) * 20);
-      else if (isJogeum) lowCm = 250 + Math.floor(Math.abs(Math.sin(pLng * 10)) * 50);
-      else lowCm = 160 + Math.floor(Math.abs(Math.cos(pLat + pLng)) * 50);
+      if (isSari) lowCm = 45 + Math.floor(Math.abs(Math.sin((pLat + diffDays) * 10)) * 25);
+      else if (isJogeum) lowCm = 250 + Math.floor(Math.abs(Math.sin((pLng + diffDays) * 10)) * 50);
+      else lowCm = 150 + Math.floor(Math.abs(Math.cos(pLat + pLng + diffDays)) * 55);
 
       const isMudFlat = (pLat > 36.2 && pLat < 36.8 && pLng < 126.5);
       const isBreakwater = !isMudFlat;
@@ -427,14 +458,56 @@
         fDesc = "조류가 멈춰 어류 활성도 저하";
       }
 
+      // 날짜별 물때 시각 50분씩 순연 반영
+      const shiftMin = (diffDays * 50) % 720;
+      let lowHour = 22, lowMin = 15 + shiftMin;
+      while (lowMin >= 60) { lowMin -= 60; lowHour = (lowHour + 1) % 24; }
+      const lowTimeStr = `${String(lowHour).padStart(2, '0')}:${String(lowMin).padStart(2, '0')}`;
+
       return {
         stationName: station.name,
         tideCycle: tideName,
-        low: `22:15 (${lowCm}cm)`,
+        low: `${lowTimeStr} (${lowCm}cm)`,
         high: `04:40 (${station.baseDiff}cm)`,
         fScore, fDesc, fCardClass,
         hScore, hDesc, hCardClass
       };
+    }
+
+    // 날짜 퀵 선택 (오늘/내일/모레)
+    function selectQuickDate(offsetDays) {
+      document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      if (offsetDays === 0) document.getElementById('btnToday').classList.add('active');
+      else if (offsetDays === 1) document.getElementById('btnTomorrow').classList.add('active');
+      else if (offsetDays === 2) document.getElementById('btnDayAfter').classList.add('active');
+
+      const target = new Date();
+      target.setDate(target.getDate() + offsetDays);
+      selectedDateObj = target;
+      
+      syncDateInputUI(target);
+      reAnalyzeWithCurrentDate();
+    }
+
+    function onCustomDateChange(dateStr) {
+      if (!dateStr) return;
+      document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      const parts = dateStr.split('-');
+      selectedDateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+      reAnalyzeWithCurrentDate();
+    }
+
+    function syncDateInputUI(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      document.getElementById('customDateInput').value = `${y}-${m}-${d}`;
+    }
+
+    function reAnalyzeWithCurrentDate() {
+      if (currentSelectedCoords) {
+        fetchAndAnalyze(currentSelectedCoords.lat, currentSelectedCoords.lng, currentSelectedTitle, selectedDateObj);
+      }
     }
 
     function toggleBottomSheet() {
@@ -451,6 +524,9 @@
     }
 
     window.onload = function() {
+      // 날짜 피커 초기값 세팅 (오늘 날짜)
+      syncDateInputUI(new Date());
+
       map = new naver.maps.Map('map', {
         center: new naver.maps.LatLng(36.3, 127.3),
         zoom: 7,
@@ -488,8 +564,12 @@
         });
       }
 
+      // 현재 선택 좌표 상태 저장
+      currentSelectedCoords = { lat, lng };
+      currentSelectedTitle = customTitle;
+
       map.panTo(new naver.maps.LatLng(lat, lng));
-      fetchAndAnalyze(lat, lng, customTitle);
+      fetchAndAnalyze(lat, lng, customTitle, selectedDateObj);
       openBottomSheet();
     }
 
@@ -532,7 +612,7 @@
       );
     }
 
-    function fetchAndAnalyze(lat, lng, customTitle) {
+    function fetchAndAnalyze(lat, lng, customTitle, targetDate) {
       document.getElementById('emptyState').style.display = 'none';
       const resultContent = document.getElementById('resultContent');
       resultContent.style.display = 'flex';
@@ -540,7 +620,12 @@
       document.getElementById('pTitle').innerText = customTitle || `선택 지점`;
       document.getElementById('pCoords').innerText = `위도 ${lat.toFixed(4)} | 경도 ${lng.toFixed(4)}`;
 
-      const data = calculateInstantTide(lat, lng);
+      // 선택된 날짜 레이블 표기
+      const d = targetDate || new Date();
+      const dateStr = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+      document.getElementById('tideCycleDateLabel').innerText = `${dateStr} 물때`;
+
+      const data = calculateInstantTide(lat, lng, d);
 
       document.getElementById('observatoryName').innerText = `연동 조위관측소: ${data.stationName} 관측소`;
       document.getElementById('tideCycle').innerText = data.tideCycle;

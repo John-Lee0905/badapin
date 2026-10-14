@@ -2,69 +2,74 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>바다핀 (BadaPin) - 대한민국 바다 포인트 분석기</title>
   <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=dnbd0ct3ef&submodules=geocoder"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #0f172a; height: 100vh; overflow: hidden; display: flex; flex-direction: column; color: #1e293b; }
 
     header {
-      background: #0f172a; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 100;
+      background: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 100;
     }
-    header h1 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    header h1 { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
     .brand-pin { color: #ef4444; }
-    .header-desc { font-size: 12px; color: #94a3b8; }
+    .header-desc { font-size: 11px; color: #94a3b8; }
 
-    .app-container { display: flex; flex: 1; height: calc(100vh - 49px); overflow: hidden; }
-    .map-pane { flex: 1.1; height: 100%; position: relative; }
+    .app-container { display: flex; flex: 1; height: calc(100vh - 49px); overflow: hidden; position: relative; }
+    .map-pane { flex: 1.1; height: 100%; position: relative; width: 100%; }
     #map { width: 100%; height: 100%; z-index: 1; }
     
     .map-guide-banner {
-      position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 10;
       background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); color: #38bdf8;
-      padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 700;
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3); pointer-events: none; border: 1px solid rgba(56, 189, 248, 0.3);
+      white-space: nowrap;
     }
 
     .gps-btn {
-      position: absolute; bottom: 24px; left: 20px; z-index: 10;
-      background: #0284c7; color: white; border: none; padding: 10px 16px; border-radius: 30px;
-      font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+      position: absolute; bottom: 24px; left: 16px; z-index: 10;
+      background: #0284c7; color: white; border: none; padding: 9px 15px; border-radius: 30px;
+      font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 5px;
       box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); cursor: pointer; transition: all 0.2s;
     }
     .gps-btn:hover { background: #0369a1; }
 
     .filter-bar {
-      position: absolute; top: 16px; left: 20px; z-index: 10;
-      display: flex; gap: 6px; background: rgba(255, 255, 255, 0.95); padding: 4px; border-radius: 8px;
+      position: absolute; top: 12px; left: 16px; z-index: 10;
+      display: flex; gap: 4px; background: rgba(255, 255, 255, 0.95); padding: 3px; border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     .filter-btn {
-      border: none; background: transparent; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;
+      border: none; background: transparent; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;
     }
     .filter-btn.active { background: #0284c7; color: white; }
 
+    /* 데스크톱 기본 우측 패널 */
     .info-pane {
-      flex: 0.9; max-width: 520px; height: 100%; background: #ffffff;
+      flex: 0.9; max-width: 500px; height: 100%; background: #ffffff;
       overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px;
       box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 20; border-left: 1px solid #e2e8f0;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
+    .bottom-sheet-handle { display: none; }
 
     .empty-state {
       height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-      text-align: center; color: #64748b; gap: 12px;
+      text-align: center; color: #64748b; gap: 12px; padding: 20px;
     }
-    .empty-state .icon { font-size: 48px; }
+    .empty-state .icon { font-size: 44px; }
 
     .point-header { border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
     .point-title-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
-    .point-title { font-size: 19px; font-weight: 800; color: #0f172a; word-break: keep-all; line-height: 1.3; }
-    .point-coords { font-size: 12px; color: #64748b; font-family: monospace; }
+    .point-title { font-size: 18px; font-weight: 800; color: #0f172a; word-break: keep-all; line-height: 1.3; }
+    .point-coords { font-size: 11px; color: #64748b; font-family: monospace; }
 
     .score-container { display: flex; flex-direction: column; gap: 8px; }
     .score-card {
-      border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
+      border-radius: 12px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center;
       border: 1px solid #e2e8f0;
     }
     .score-card.good { background: #f0fdf4; border-color: #86efac; }
@@ -73,7 +78,7 @@
 
     .score-left h4 { font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px; }
     .score-left p { font-size: 11px; color: #475569; }
-    .score-badge { font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 20px; }
+    .score-badge { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 20px; white-space: nowrap; }
     .score-card.good .score-badge { background: #16a34a; color: white; }
     .score-card.normal .score-badge { background: #ca8a04; color: white; }
     .score-card.bad .score-badge { background: #dc2626; color: white; }
@@ -85,31 +90,54 @@
 
     .retreat-alert { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; color: #be123c; font-size: 12px; font-weight: 700; }
 
-    .card-title { font-size: 14px; font-weight: 800; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-    .rig-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+    .card-title { font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .rig-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 11px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
     .rig-item h4 { font-size: 13px; font-weight: 800; color: #0f172a; display: flex; justify-content: space-between; }
-    .rig-item p { font-size: 12px; color: #475569; line-height: 1.4; }
-    .rig-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; }
+    .rig-item p { font-size: 11px; color: #475569; line-height: 1.4; }
+    .rig-badge { font-size: 10px; padding: 2px 5px; border-radius: 4px; background: #e0f2fe; color: #0369a1; }
     
-    .law-alert { background: #f8fafc; border-left: 4px solid #f59e0b; padding: 10px 12px; font-size: 12px; color: #475569; line-height: 1.4; }
+    .law-alert { background: #f8fafc; border-left: 4px solid #f59e0b; padding: 10px 12px; font-size: 11px; color: #475569; line-height: 1.4; }
 
     .live-badge {
-      display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 3px 7px; border-radius: 4px; white-space: nowrap;
+      display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
     }
 
     .data-source-footer {
-      margin-top: 10px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0;
-      border-radius: 10px; font-size: 11px; color: #64748b; line-height: 1.5;
+      margin-top: 6px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; font-size: 10px; color: #64748b; line-height: 1.4;
     }
     .data-source-footer strong { color: #334155; }
-    .data-source-footer .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .source-tag { background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    .data-source-footer .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .source-tag { background: #e2e8f0; color: #475569; padding: 2px 5px; border-radius: 4px; font-size: 9px; }
 
+    /* 📱 모바일 전용 반응형 (바텀 시트 전환) */
     @media (max-width: 768px) {
-      .app-container { flex-direction: column; }
-      .map-pane { flex: 1; height: 50vh; }
-      .info-pane { flex: 1; max-width: 100%; height: 50vh; }
-      .map-guide-banner { display: none; }
+      .header-desc { display: none; }
+      .map-guide-banner { top: 56px; font-size: 11px; padding: 5px 12px; }
+      .gps-btn { bottom: 85px; }
+
+      .info-pane {
+        position: absolute; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
+        height: 72vh; max-height: 72vh; border-radius: 20px 20px 0 0;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25); border-left: none;
+        transform: translateY(calc(100% - 65px)); /* 기본 접힘 상태 (상단 탭만 노출) */
+        padding: 12px 16px 30px 16px;
+      }
+
+      .info-pane.open {
+        transform: translateY(0); /* 클릭 시 위로 펼쳐짐 */
+      }
+
+      .bottom-sheet-handle {
+        display: flex; justify-content: center; align-items: center; width: 100%;
+        padding-bottom: 8px; cursor: pointer;
+      }
+      .handle-bar {
+        width: 36px; height: 4px; background: #cbd5e1; border-radius: 2px;
+      }
+
+      .empty-state { display: none !important; }
+      #resultContent { display: flex !important; }
     }
   </style>
 </head>
@@ -128,26 +156,32 @@
         <button class="filter-btn" onclick="filterFamousSpots('HARVESTING')">🔦 해루질</button>
       </div>
 
-      <div class="map-guide-banner">📍 명당을 누르거나 바다를 클릭해보세요!</div>
+      <div class="map-guide-banner">📍 지도를 터치하여 포인트를 선택하세요</div>
       <div id="map"></div>
 
       <button class="gps-btn" onclick="findMyLocation()">🎯 내 GPS 위치</button>
     </div>
 
+    <!-- 우측 패널 (모바일에서는 바텀 시트) -->
     <div class="info-pane" id="infoPane">
+      <!-- 모바일 손잡이 드래그 바 -->
+      <div class="bottom-sheet-handle" onclick="toggleBottomSheet()">
+        <div class="handle-bar"></div>
+      </div>
+
       <div class="empty-state" id="emptyState">
         <div class="icon">🧭</div>
         <h3>가고 싶은 바다를 선택하세요</h3>
         <p>명당 마커를 누르거나 바다 위를 클릭하면<br><strong>선택 지역의 실제 지명과 조석 정보</strong>를 즉시 분석합니다.<br><small style="color:#94a3b8;">*내륙 및 휴전선 이북 지역은 분석이 제한됩니다.</small></p>
       </div>
 
-      <div id="resultContent" style="display: none; flex-direction: column; gap: 14px;">
-        <div class="point-header">
+      <div id="resultContent" style="display: none; flex-direction: column; gap: 13px;">
+        <div class="point-header" onclick="toggleBottomSheet()">
           <div class="point-title-wrap">
-            <span class="point-title" id="pTitle">지점 분석 결과</span>
+            <span class="point-title" id="pTitle">포인트를 선택하세요</span>
             <span class="live-badge" id="liveBadge">LIVE 분석</span>
           </div>
-          <div class="point-coords" id="pCoords">위도 36.0000 | 경도 126.0000</div>
+          <div class="point-coords" id="pCoords">지도를 터치하면 정보가 표시됩니다</div>
         </div>
 
         <div>
@@ -156,14 +190,14 @@
             <div class="score-card good" id="fScoreCard">
               <div class="score-left">
                 <h4>🎣 바다낚시 추천도</h4>
-                <p id="fScoreDesc">분석 중...</p>
+                <p id="fScoreDesc">선택 대기 중</p>
               </div>
               <span class="score-badge" id="fScoreBadge">-</span>
             </div>
             <div class="score-card good" id="hScoreCard">
               <div class="score-left">
                 <h4>🔦 해루질 추천도</h4>
-                <p id="hScoreDesc">분석 중...</p>
+                <p id="hScoreDesc">선택 대기 중</p>
               </div>
               <span class="score-badge" id="hScoreBadge">-</span>
             </div>
@@ -176,7 +210,7 @@
         </div>
 
         <div class="tide-box">
-          <div style="font-size: 11px; font-weight: 700; color: #475569;" id="observatoryName">연동 관측소: 계산 중...</div>
+          <div style="font-size: 11px; font-weight: 700; color: #475569;" id="observatoryName">연동 관측소: 대기 중</div>
           <div class="tide-grid">
             <div class="tide-item">
               <div class="t-sub">오늘 물때</div>
@@ -206,12 +240,12 @@
         <div class="data-source-footer">
           <strong>📋 데이터 출처 및 법적 고지</strong>
           <div class="source-tags">
-            <span class="source-tag">국립해양조사원 표준 조석주기</span>
-            <span class="source-tag">기상청 해양기상</span>
+            <span class="source-tag">국립해양조사원</span>
+            <span class="source-tag">기상청</span>
             <span class="source-tag">국립수산과학원</span>
           </div>
-          <p style="margin-top: 6px; font-size: 10px; color: #94a3b8;">
-            * 본 서비스의 조석 및 분석 정보는 공식 조석 계산 공식에 기반한 참고용 정보입니다. 현장 기상 급변 및 지형에 따라 차이가 발생할 수 있으므로 구명조끼 등 안전장구를 반드시 착용하세요.
+          <p style="margin-top: 5px; font-size: 10px; color: #94a3b8;">
+            * 공식 조석 계산식 기반 참고용 정보이며, 안전장구 착용 및 현장 통제가 우선입니다.
           </p>
         </div>
       </div>
@@ -307,7 +341,7 @@
         return false;
       }
       if (lat >= 38.0) {
-        alert("🚨 휴전선 이북(북한) 해역은 조석 및 포인트 조회가 제한됩니다.");
+        alert("🚨 휴전선 이북(북한) 해역은 조석 조회가 제한됩니다.");
         return false;
       }
       if (lat >= 35.5 && lat <= 37.8 && lng >= 127.1 && lng <= 128.7) {
@@ -347,7 +381,6 @@
       return nearest;
     }
 
-    // 고속 천문 조석 계산 엔진 (지연 시간 0초)
     function calculateInstantTide(lat, lng) {
       const pLat = parseFloat(lat);
       const pLng = parseFloat(lng);
@@ -422,6 +455,20 @@
       };
     }
 
+    // 모바일 바텀시트 열림/닫힘 토글
+    function toggleBottomSheet() {
+      if (window.innerWidth <= 768) {
+        const pane = document.getElementById('infoPane');
+        pane.classList.toggle('open');
+      }
+    }
+
+    function openBottomSheet() {
+      if (window.innerWidth <= 768) {
+        document.getElementById('infoPane').classList.add('open');
+      }
+    }
+
     window.onload = function() {
       map = new naver.maps.Map('map', {
         center: new naver.maps.LatLng(36.3, 127.3),
@@ -443,7 +490,6 @@
         selectedSpotId = null;
         updateFamousMarkerStyles();
 
-        // 지명 매핑 즉시 도출
         const placeName = findNearestLandmarkName(lat, lng);
         placeCustomPin(lat, lng, placeName, true);
       });
@@ -529,6 +575,8 @@
 
       map.panTo(new naver.maps.LatLng(lat, lng));
       fetchAndAnalyze(lat, lng, customTitle);
+      // 모바일에서는 분석과 동시에 바텀시트가 위로 슬라이드 업
+      openBottomSheet();
     }
 
     function findMyLocation() {
@@ -573,7 +621,6 @@
       );
     }
 
-    // 초고속 즉시 분석 함수 (0.01초 소요)
     function fetchAndAnalyze(lat, lng, customTitle) {
       document.getElementById('emptyState').style.display = 'none';
       const resultContent = document.getElementById('resultContent');
@@ -582,7 +629,6 @@
       document.getElementById('pTitle').innerText = customTitle || `선택 지점`;
       document.getElementById('pCoords').innerText = `위도 ${lat.toFixed(4)} | 경도 ${lng.toFixed(4)}`;
 
-      // 로컬/클라우드 통신 대기 없이 즉각 계산
       const data = calculateInstantTide(lat, lng);
 
       document.getElementById('observatoryName').innerText = `연동 조위관측소: ${data.stationName} 관측소`;
